@@ -1,0 +1,11 @@
+# Environnement
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Données téléchargées (OpenML), non versionnées
+data/
+
+.DS_Store
+Thumbs.db

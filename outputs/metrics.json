@@ -1,0 +1,28 @@
+{
+  "null": {
+    "deviance_poisson_frequence": 0.4788667246532208,
+    "deviance_gamma_cout_moyen": 1.4235418743118473
+  },
+  "GLM": {
+    "deviance_poisson_frequence": 0.4589695583784256,
+    "deviance_gamma_cout_moyen": 1.4375877085929447,
+    "gini_prime_pure": 0.3192827190463787,
+    "charge_predite_sur_observee": 0.993508568024108,
+    "coefficient_equilibre": 1.000658459620684,
+    "gain_deviance_frequence_vs_null_pct": 4.155053013801291,
+    "gain_deviance_cout_vs_null_pct": -0.9866821998395503
+  },
+  "XGBoost": {
+    "deviance_poisson_frequence": 0.4484320435093446,
+    "deviance_gamma_cout_moyen": 1.4196206172462218,
+    "gini_prime_pure": 0.3677725301465111,
+    "charge_predite_sur_observee": 0.991677672280136,
+    "coefficient_equilibre": 1.0324410391185745,
+    "gain_deviance_frequence_vs_null_pct": 6.355563996624724,
+    "gain_deviance_cout_vs_null_pct": 0.2754577955440207
+  },
+  "xgboost_nb_arbres": {
+    "frequence": 440,
+    "cout_moyen": 35
+  }
+}
