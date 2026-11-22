@@ -100,7 +100,7 @@ Durée : environ 3 minutes sur un ordinateur portable.
 ## Structure
 
 ```
-├── notebooks/            # notebook pas à pas, déjà exécuté
+├── notebooks/              # notebook pas à pas, déjà exécuté
 ├── main.py                 # pipeline complet
 ├── src/
 │   ├── data.py             # téléchargement OpenML, nettoyage, jointure fréquence / coût
