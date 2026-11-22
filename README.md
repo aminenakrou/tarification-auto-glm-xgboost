@@ -82,6 +82,8 @@ Prime pure = fréquence × coût moyen, puis **correction d'équilibre** : un co
 - variables du GLM de coût : validation croisée à 5 plis ;
 - XGBoost : petite grille (profondeur 3 à 7, poids minimal des feuilles 20 à 100) avec arrêt précoce ; les écarts entre réglages sont inférieurs à 0,2 %, le réglage retenu (profondeur 5) est donc robuste.
 
+**Notebook pas à pas :** [`notebooks/analyse_tarification.ipynb`](notebooks/analyse_tarification.ipynb) reprend les données, les GLM, XGBoost et toute la comparaison, avec les tableaux et graphiques déjà affichés. Il s'affiche directement sur GitHub, sans rien installer.
+
 ## Lancer le projet
 
 ```bash
@@ -98,6 +100,7 @@ Durée : environ 3 minutes sur un ordinateur portable.
 ## Structure
 
 ```
+├── notebooks/            # notebook pas à pas, déjà exécuté
 ├── main.py                 # pipeline complet
 ├── src/
 │   ├── data.py             # téléchargement OpenML, nettoyage, jointure fréquence / coût
