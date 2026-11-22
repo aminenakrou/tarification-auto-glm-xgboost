@@ -3,8 +3,10 @@
 Construction d'une **prime pure** d'assurance automobile sur les données publiques **freMTPL2** (678 013 contrats français), avec l'approche actuarielle classique **fréquence × coût moyen** :
 
 - un **GLM de Poisson** pour la fréquence et un **GLM Gamma** pour le coût moyen, lisibles sous forme de relativités ;
+- un **GLM enrichi** (interactions avec le bonus-malus) ;
 - la même structure avec **XGBoost** (objectifs Poisson et Gamma) ;
-- une comparaison sur un jeu de test : déviances, indice de **Gini** de la prime pure, **calibration** par décile, et interprétation de XGBoost avec les valeurs **SHAP**.
+- une comparaison sur un jeu de test : déviances, indice de **Gini** avec intervalles de confiance par bootstrap, **calibration**, **double lift**, et interprétation de XGBoost par les valeurs **SHAP** ;
+- un traitement des **sinistres graves** : écrêtement puis surcharge mutualisée.
 
 ![Fréquence observée selon les principales variables](outputs/figures/frequence_par_variable.png)
 
@@ -12,22 +14,28 @@ Construction d'une **prime pure** d'assurance automobile sur les données publiq
 
 Jeu de test : 136 138 contrats (20 %), jamais utilisés pour l'entraînement ni pour le choix des modèles.
 
-| | Modèle constant | GLM | XGBoost |
-|---|---|---|---|
-| Déviance de Poisson (fréquence) | 0,4789 | 0,4590 (−4,2 %) | **0,4484 (−6,4 %)** |
-| Déviance Gamma (coût moyen) | 1,4235 | 1,4376 (+1,0 %) | 1,4196 (−0,3 %) |
-| Gini de la prime pure | – | 0,319 | **0,368** |
-| Charge prédite / charge observée | – | 0,994 | 0,992 |
+| | Modèle constant | GLM | GLM + interactions | XGBoost |
+|---|---|---|---|---|
+| Déviance de Poisson (fréquence) | 0,4789 | 0,4590 (−4,2 %) | 0,4570 (−4,6 %) | **0,4484 (−6,4 %)** |
+| Déviance Gamma (coût moyen) | 1,4235 | 1,4376 | 1,4376 | 1,4196 |
+| Gini de la prime pure | – | 0,319 | 0,331 | **0,368** |
+| IC 95 % du Gini (bootstrap) | – | [0,271 ; 0,368] | [0,287 ; 0,378] | [0,325 ; 0,413] |
+| Charge prédite / observée | – | 0,994 | 0,994 | 0,992 |
+
+Les écarts de Gini sont significatifs (bootstrap apparié, 200 tirages) : GLM + interactions − GLM = +0,012 [+0,006 ; +0,018], XGBoost − GLM + interactions = +0,036 [+0,010 ; +0,062].
 
 **Ce qu'il faut retenir**
 
-- **La fréquence porte l'essentiel du signal.** XGBoost gagne nettement sur la fréquence : il capte des interactions et des effets non linéaires (bonus-malus × âge, densité) qu'un GLM sans interactions ne voit pas.
-- **Le coût moyen est presque imprévisible avec ces variables.** Aucun modèle ne fait vraiment mieux qu'un coût constant ; c'est un résultat connu sur freMTPL2, dû au faible nombre de sinistres (environ 25 000) et à leur forte dispersion. Le GLM de coût a été volontairement simplifié (choix par validation croisée à 5 plis sur le jeu d'entraînement).
-- **XGBoost classe mieux les risques** (Gini 0,368 contre 0,319), mais **le GLM reste plus lisible** : chaque coefficient est une relativité directement utilisable dans une grille tarifaire.
+- **La fréquence porte l'essentiel du signal.** XGBoost gagne nettement : il capte des interactions et des effets non linéaires qu'un GLM ne voit pas, même enrichi.
+- **Ajouter quelques interactions au GLM réduit un tiers de l'écart** avec XGBoost (Gini 0,319 → 0,331), sans perdre la lisibilité d'une grille tarifaire.
+- **Le coût moyen est presque imprévisible avec ces variables** : aucun modèle ne fait vraiment mieux qu'un coût constant. C'est un résultat connu sur freMTPL2 (environ 25 000 sinistres, très dispersés). Le GLM de coût a donc été volontairement simplifié (choix par validation croisée à 5 plis sur le jeu d'entraînement).
+- **Le double lift confirme l'avantage de XGBoost là où les deux tarifs divergent** : sur les 10 % de contrats où XGBoost est le plus bas par rapport au GLM, la charge observée vaut 0,80 fois la moyenne ; XGBoost prédit 0,91, le GLM 1,61.
 
-| Courbes de Lorenz | Calibration par décile |
+| Courbes de Lorenz | Double lift |
 |---|---|
-| ![Lorenz](outputs/figures/lorenz_prime_pure.png) | ![Calibration](outputs/figures/calibration_deciles.png) |
+| ![Lorenz](outputs/figures/lorenz_prime_pure.png) | ![Double lift](outputs/figures/double_lift.png) |
+
+![Calibration](outputs/figures/calibration_deciles.png)
 
 ### Lecture du GLM de fréquence
 
@@ -41,6 +49,10 @@ La table complète des relativités, avec intervalles de confiance, est dans [`o
 
 ![SHAP](outputs/figures/shap_frequence.png)
 
+### Sinistres graves
+
+Les modèles sont entraînés sur des montants écrêtés à 200 000 € : quelques sinistres de plusieurs millions d'euros déstabiliseraient sinon le modèle de coût. La part au-delà du seuil n'est pas perdue : elle est **mutualisée** par une surcharge proportionnelle de **+15,4 %**, estimée sur le jeu d'entraînement. Avec cette surcharge, le tarif XGBoost couvre 102 % de la charge brute du jeu de test.
+
 ## Méthode
 
 **Données** (OpenML [41214](https://www.openml.org/d/41214) et [41215](https://www.openml.org/d/41215), issues du package R CASdatasets)
@@ -51,7 +63,6 @@ La table complète des relativités, avec intervalles de confiance, est dans [`o
 **Préparation**
 
 - exposition plafonnée à 1 an ; nombre de sinistres plafonné à 4 ;
-- sinistres graves écrêtés à 200 000 € pour stabiliser le modèle de coût ;
 - on ne garde que les sinistres ayant un montant connu, pour que fréquence et coût portent sur les mêmes sinistres ;
 - pour le GLM : âges en classes (effets non linéaires), bonus-malus plafonné à 150, log de la densité ; niveaux de référence = classes les plus exposées.
 
@@ -60,9 +71,16 @@ La table complète des relativités, avec intervalles de confiance, est dans [`o
 | | Fréquence | Coût moyen |
 |---|---|---|
 | GLM (statsmodels) | Poisson, lien log, offset log(exposition) | Gamma, lien log, pondéré par le nombre de sinistres |
+| GLM + interactions | idem + bonus-malus × âge du conducteur, bonus-malus × âge du véhicule, termes quadratique et cubique du bonus-malus | idem GLM |
 | XGBoost | `count:poisson`, log(exposition) en `base_margin`, arrêt précoce | `reg:gamma`, pondéré par le nombre de sinistres, arrêt précoce |
 
 Prime pure = fréquence × coût moyen, puis **correction d'équilibre** : un coefficient global, calculé sur le jeu d'entraînement, pour que la charge prédite égale la charge observée.
+
+**Choix des modèles sans toucher au jeu de test**
+
+- interactions du GLM : comparées sur une validation interne au jeu d'entraînement (déviance et AIC) ;
+- variables du GLM de coût : validation croisée à 5 plis ;
+- XGBoost : petite grille (profondeur 3 à 7, poids minimal des feuilles 20 à 100) avec arrêt précoce ; les écarts entre réglages sont inférieurs à 0,2 %, le réglage retenu (profondeur 5) est donc robuste.
 
 ## Lancer le projet
 
@@ -75,7 +93,7 @@ python main.py                    # télécharge les données (une fois), entra�
 python -m pytest                  # tests unitaires
 ```
 
-Durée : environ 2 minutes sur un ordinateur portable.
+Durée : environ 3 minutes sur un ordinateur portable.
 
 ## Structure
 
@@ -83,9 +101,9 @@ Durée : environ 2 minutes sur un ordinateur portable.
 ├── main.py                 # pipeline complet
 ├── src/
 │   ├── data.py             # téléchargement OpenML, nettoyage, jointure fréquence / coût
-│   ├── features.py         # variables tarifaires (classes, plafonds, références)
+│   ├── features.py         # variables tarifaires (classes, plafonds, références, interactions)
 │   ├── models.py           # GLM et XGBoost, relativités, SHAP
-│   ├── evaluation.py       # déviances, Lorenz, Gini, calibration
+│   ├── evaluation.py       # déviances, Lorenz, Gini, bootstrap, calibration, double lift
 │   └── plots.py            # figures
 ├── tests/                  # tests unitaires (pytest)
 ├── outputs/                # figures, métriques (metrics.json), relativités
@@ -94,9 +112,9 @@ Durée : environ 2 minutes sur un ordinateur portable.
 
 ## Limites et pistes
 
-- Pas d'interactions dans le GLM : en ajouter (bonus-malus × âge) réduirait l'écart avec XGBoost tout en restant lisible.
-- Les sinistres graves sont simplement écrêtés ; un traitement séparé (loi de Pareto au-delà d'un seuil, mutualisation de la surcharge) serait plus rigoureux.
+- Les sinistres graves sont mutualisés par une surcharge uniforme ; modéliser leur queue (loi de Pareto généralisée au-delà du seuil) permettrait d'affiner.
 - La variable région pourrait être lissée spatialement plutôt que traitée comme 22 modalités indépendantes.
+- Un GAM (effets lisses de l'âge et du bonus-malus) serait un bon compromis entre la lisibilité du GLM et la performance de XGBoost.
 
 ## Outils
 

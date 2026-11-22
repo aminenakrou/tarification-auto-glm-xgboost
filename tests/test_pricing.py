@@ -53,3 +53,32 @@ def test_calibration_by_decile_preserves_totals():
     cal = calibration_by_decile(df, pred, n=10)
     assert len(cal) == 10
     assert cal["exposition"].sum() == pytest.approx(df["Exposure"].sum())
+
+
+def test_bootstrap_gini_returns_intervals_and_differences():
+    from src.evaluation import bootstrap_gini
+    rng = np.random.default_rng(2)
+    exposure = rng.uniform(0.1, 1, 800)
+    y = rng.gamma(0.3, 500, 800)
+    preds = {"bon": y + rng.normal(0, 50, 800), "aleatoire": rng.random(800)}
+    res = bootstrap_gini(y, preds, exposure, n_boot=50)
+    lo, hi = res["bon"]["ic95"]
+    assert lo <= res["bon"]["gini"] <= hi
+    # le modèle aléatoire classe moins bien : l'écart « aleatoire - bon » est négatif
+    assert res["aleatoire - bon"]["ic95"][1] < 0
+
+
+def test_double_lift_is_normalised():
+    from src.evaluation import double_lift
+    rng = np.random.default_rng(3)
+    df = pd.DataFrame({"Exposure": rng.uniform(0.1, 1, 1000), "ClaimAmount": rng.gamma(0.2, 1000, 1000)})
+    a, b = rng.uniform(50, 200, 1000), rng.uniform(50, 200, 1000)
+    dl = double_lift(df, a, b)
+    assert len(dl) == 10
+    assert set(dl.columns) == {"observee", "modele_a", "modele_b"}
+
+
+def test_interaction_formula_is_valid():
+    from src.features import GLM_INTERACTIONS
+    f = glm_formula("ClaimNb") + GLM_INTERACTIONS
+    assert f.count(":BonusMalusCap") == 2

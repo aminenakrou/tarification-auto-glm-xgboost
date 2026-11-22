@@ -12,6 +12,15 @@
     "gain_deviance_frequence_vs_null_pct": 4.155053013801291,
     "gain_deviance_cout_vs_null_pct": -0.9866821998395503
   },
+  "GLM + interactions": {
+    "deviance_poisson_frequence": 0.4570419132894132,
+    "deviance_gamma_cout_moyen": 1.4375877085929447,
+    "gini_prime_pure": 0.33107438313696536,
+    "charge_predite_sur_observee": 0.9935085012618975,
+    "coefficient_equilibre": 1.0005230065681983,
+    "gain_deviance_frequence_vs_null_pct": 4.557596141100095,
+    "gain_deviance_cout_vs_null_pct": -0.9866821998395503
+  },
   "XGBoost": {
     "deviance_poisson_frequence": 0.4484320435093446,
     "deviance_gamma_cout_moyen": 1.4196206172462218,
@@ -20,6 +29,59 @@
     "coefficient_equilibre": 1.0324410391185745,
     "gain_deviance_frequence_vs_null_pct": 6.355563996624724,
     "gain_deviance_cout_vs_null_pct": 0.2754577955440207
+  },
+  "bootstrap_gini": {
+    "GLM": {
+      "gini": 0.3192827190463787,
+      "ic95": [
+        0.2708798486325296,
+        0.3680301396555354
+      ]
+    },
+    "GLM + interactions": {
+      "gini": 0.33107438313696536,
+      "ic95": [
+        0.28674558334341665,
+        0.37833440881536706
+      ]
+    },
+    "XGBoost": {
+      "gini": 0.3677725301465111,
+      "ic95": [
+        0.32488001863846083,
+        0.41259461089063176
+      ]
+    },
+    "GLM + interactions - GLM": {
+      "ecart": 0.011833862433224693,
+      "ic95": [
+        0.006158954451819077,
+        0.017574920016998126
+      ]
+    },
+    "XGBoost - GLM": {
+      "ecart": 0.04799254727407653,
+      "ic95": [
+        0.02238367071423813,
+        0.0776481275839903
+      ]
+    },
+    "XGBoost - GLM + interactions": {
+      "ecart": 0.036158684840851836,
+      "ic95": [
+        0.009534662081722494,
+        0.06167771234214752
+      ]
+    }
+  },
+  "sinistres_graves": {
+    "seuil_ecretement": 200000,
+    "surcharge_mutualisee": 1.1541423599257863,
+    "charge_brute_test_couverte_xgboost": 1.019943595839991
+  },
+  "glm_frequence_aic": {
+    "sans_interactions": 171369.75257860136,
+    "avec_interactions": 171009.16312551644
   },
   "xgboost_nb_arbres": {
     "frequence": 440,

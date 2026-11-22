@@ -55,6 +55,15 @@ def gbm_matrix(df: pd.DataFrame) -> pd.DataFrame:
     return X
 
 
+# GLM enrichi : interactions et non-linéarité du bonus-malus, choisies sur une validation
+# interne au jeu d'entraînement (gain de déviance, AIC), en restant lisibles.
+GLM_INTERACTIONS = (
+    " + C(DrivAgeGrp, Treatment(reference='51-70')):BonusMalusCap"
+    " + C(VehAgeGrp, Treatment(reference='1-10')):BonusMalusCap"
+    " + I((BonusMalusCap - 50) ** 2) + I((BonusMalusCap - 50) ** 3)"
+)
+
+
 def glm_formula(target: str, cats=CAT_GLM, nums=NUM_GLM) -> str:
     terms = [f"C({c}, Treatment(reference='{REFERENCE[c]}'))" for c in cats] + list(nums)
     return f"{target} ~ " + " + ".join(terms)

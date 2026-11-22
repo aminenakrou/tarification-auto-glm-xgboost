@@ -9,16 +9,17 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 import xgboost as xgb
 
-from .features import CAT_GLM_SEV, NUM_GLM_SEV, gbm_matrix, glm_formula
+from .features import CAT_GLM_SEV, GLM_INTERACTIONS, NUM_GLM_SEV, gbm_matrix, glm_formula
 
 SEED = 2026
 
 
 # ------------------------------------------------------------------ GLM
-def fit_glm_frequency(train: pd.DataFrame):
-    """GLM de Poisson, lien log, avec log(exposition) en offset."""
+def fit_glm_frequency(train: pd.DataFrame, interactions: bool = False):
+    """GLM de Poisson, lien log, avec log(exposition) en offset (avec ou sans interactions)."""
+    formula = glm_formula("ClaimNb") + (GLM_INTERACTIONS if interactions else "")
     model = smf.glm(
-        glm_formula("ClaimNb"),
+        formula,
         data=train,
         family=sm.families.Poisson(),
         offset=np.log(train["Exposure"]),

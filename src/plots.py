@@ -12,7 +12,7 @@ import pandas as pd  # noqa: E402
 from .evaluation import lorenz_curve  # noqa: E402
 from .features import DRIV_AGE_LABELS  # noqa: E402
 
-BLUE, ORANGE, GREY = "#1f5f8b", "#d9822b", "#9aa5b1"
+BLUE, ORANGE, GREEN, GREY = "#1f5f8b", "#d9822b", "#3a8a5c", "#9aa5b1"
 plt.rcParams.update({"font.size": 11, "axes.spines.top": False, "axes.spines.right": False})
 
 
@@ -85,7 +85,7 @@ def lorenz(df: pd.DataFrame, preds: dict, path: Path, ginis: dict):
     y = (df["ClaimAmount"] / df["Exposure"]).to_numpy()
     e = df["Exposure"].to_numpy()
     fig, ax = plt.subplots(figsize=(6.5, 6))
-    for (name, p), color in zip(preds.items(), [BLUE, ORANGE]):
+    for (name, p), color in zip(preds.items(), [BLUE, GREEN, ORANGE]):
         x, c = lorenz_curve(y, p, e)
         ax.plot(x, c, color=color, lw=2.2, label=f"{name} (Gini = {ginis[name]:.3f})")
     x, c = lorenz_curve(y, y, e)
@@ -120,4 +120,20 @@ def shap_importance(shap_df: pd.DataFrame, path: Path):
     ax.barh(imp.index, imp.values, color=BLUE)
     ax.set_xlabel("Moyenne des |valeurs SHAP| (échelle log de la fréquence)")
     ax.set_title("XGBoost fréquence : importance des variables (SHAP)", fontweight="bold")
+    _save(fig, path)
+
+
+def double_lift(dl: pd.DataFrame, name_a: str, name_b: str, path: Path):
+    """Double lift chart : prime observée et primes des deux modèles, par décile du rapport B / A."""
+    x = dl.index.to_numpy()
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.plot(x, dl["observee"], color="black", marker="o", lw=2.2, label="Observée")
+    ax.plot(x, dl["modele_a"], color=BLUE, marker="s", lw=1.8, label=name_a)
+    ax.plot(x, dl["modele_b"], color=ORANGE, marker="^", lw=1.8, label=name_b)
+    ax.axhline(1, color=GREY, ls="--", lw=1)
+    ax.set_xticks(x)
+    ax.set_xlabel(f"Décile du rapport {name_b} / {name_a} (à gauche : {name_b} plus bas que {name_a})")
+    ax.set_ylabel("Prime pure relative (1 = moyenne)")
+    ax.set_title(f"Double lift : {name_b} contre {name_a} (jeu de test)", fontweight="bold")
+    ax.legend()
     _save(fig, path)
